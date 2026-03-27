@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_chat import message
 import google.generativeai as genai
 from PyPDF2 import PdfReader
-import os
+import os 
 
 # --- הגדרות דף להתאמה לנייד ---
 st.set_page_config(page_title="AI Super Bot", layout="wide", initial_sidebar_state="collapsed")
