@@ -13,7 +13,7 @@ def init_gemini():
     api_key = os.getenv("GOOGLE_API_KEY")
     if api_key:
         genai.configure(api_key=api_key)
-        return genai.GenerativeModel("gemini-1.5-flash")
+        return genai.GenerativeModel("models/gemini-1.5-flash")
     return None
 
 @st.cache_data
