@@ -1,22 +1,21 @@
 import streamlit as st
-from streamlit_chat import message
 import google.generativeai as genai
 from PyPDF2 import PdfReader
 import os 
 
 # --- הגדרות דף להתאמה לנייד ---
-st.set_page_config(page_title="AI Super Bot", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="AI Super Bot", layout="wide")
 
 # --- פונקציות זיכרון (Caching) להאצה ---
 @st.cache_resource
 def init_gemini():
-    # ננסה קודם מה-Secrets, ואם לא - נשתמש במפתח החדש ששלחת
+    # המפתח שנתת לי, מוטמע ישירות כדי שלא יהיו תקלות חיבור
     api_key = st.secrets.get("GOOGLE_API_KEY") or "AIzaSyAodfN_aB3GQ53mkI9hXhp9Y9OUhWBCews"
     
     if api_key:
         try:
             genai.configure(api_key=api_key)
-            # השם הקדוש שיפתור את ה-NotFound:
+            # השם המדויק
             return genai.GenerativeModel("gemini-1.5-flash")
         except Exception as e:
             st.error(f"שגיאה בהגדרת המודל: {e}")
@@ -33,19 +32,14 @@ def parse_pdf(file_bytes):
         return []
 
 # --- אתחול משתנים ---
-# --- אתחול משתנים ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "kb" not in st.session_state:
     st.session_state.kb = []
 
+# קריאה לפונקציית האתחול
 model = init_gemini()
-
-if model is None:
-    st.error("לא נמצא מפתח API ב-Secrets!")
-    st.stop()
-    st.session_state.kb = []
 
 # --- ממשק משתמש ---
 st.title("🤖 הבוט של נעם")
@@ -54,29 +48,40 @@ with st.sidebar:
     st.header("ניהול קבצים")
     files = st.file_uploader("העלה PDF", type="pdf", accept_multiple_files=True)
     if files:
+        new_kb = []
         for f in files:
-            st.session_state.kb.extend(parse_pdf(f))
+            new_kb.extend(parse_pdf(f))
+        st.session_state.kb = new_kb
         st.success("הקבצים נטענו!")
 
-# תצוגת הודעות
-for i, msg in enumerate(st.session_state.messages):
-    message(msg["content"], is_user=(msg["role"] == "user"), key=f"m_{i}")
+# תצוגת הודעות (שימוש ב-chat_message המובנה של Streamlit)
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
 
 # קלט מהמשתמש
 user_input = st.chat_input("שאל אותי משהו...")
 
 if user_input:
+    # הצגת הודעת המשתמש מיד
     st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.write(user_input)
     
-    # חיווי "חושב" בצד
-    with st.status("מעבד בקשה...", expanded=False) as status:
-        st.write("סורק נתונים...")
-        context = "\n".join(st.session_state.kb[-3:])
-        prompt = f"Context: {context}\n\nUser: {user_input}" if context else user_input
-        
-        st.write("מייצר תשובה...")
-        response = model.generate_content(prompt)
-        st.session_state.messages.append({"role": "bot", "content": response.text})
-        status.update(label="בוצע!", state="complete")
-    
-    st.rerun()
+    # יצירת תשובה
+    if model:
+        with st.chat_message("assistant"):
+            with st.spinner("חושב..."):
+                try:
+                    context = "\n".join(st.session_state.kb[-3:])
+                    full_prompt = f"Context: {context}\n\nUser: {user_input}" if context else user_input
+                    
+                    response = model.generate_content(full_prompt)
+                    answer = response.text
+                    
+                    st.write(answer)
+                    st.session_state.messages.append({"role": "assistant", "content": answer})
+                except Exception as e:
+                    st.error(f"אופס, משהו השתבש: {e}")
+    else:
+        st.error("לא הצלחתי להתחבר לבינה המלאכותית. בדוק את המפתח שלך.")
