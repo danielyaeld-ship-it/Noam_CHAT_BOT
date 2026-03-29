@@ -1,18 +1,19 @@
 import streamlit as st
 import requests
+import json
 
-# 1. הגדרות דף
+# הגדרות דף
 st.set_page_config(page_title="הבוט של נעם", layout="centered")
 
-# 2. שליפת המפתח מה-Secrets
+# שליפת המפתח
 api_key = st.secrets.get("GOOGLE_API_KEY")
 
-# 3. ניהול שם המשתמש
+# ניהול שם המשתמש
 if "username" not in st.session_state:
     st.session_state.username = ""
 
 if not st.session_state.username:
-    st.title("🤖 שלום! בוא נתחיל")
+    st.title("🤖 ברוך הבא!")
     name = st.text_input("איך קוראים לך?")
     if st.button("כניסה"):
         if name:
@@ -20,7 +21,6 @@ if not st.session_state.username:
             st.rerun()
     st.stop()
 
-# 4. ממשק הצ'אט
 st.title(f"שלום {st.session_state.username} 👋")
 
 if "messages" not in st.session_state:
@@ -30,21 +30,21 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 5. שליחה לגוגל - הגרסה שעוקפת את השגיאה
 if prompt := st.chat_input("שאל אותי משהו..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # שימוש במודל gemini-pro - הוא הכי יציב בחיבורים ישירים
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+    # הכתובת המדויקת והחדשה ביותר של גוגל
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
     
+    headers = {'Content-Type': 'application/json'}
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
     }
     
     try:
-        response = requests.post(url, json=payload)
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
         result = response.json()
         
         if "candidates" in result:
@@ -53,7 +53,10 @@ if prompt := st.chat_input("שאל אותי משהו..."):
                 st.markdown(bot_text)
                 st.session_state.messages.append({"role": "assistant", "content": bot_text})
         else:
-            # אם גוגל מחזיר שגיאה, נציג אותה בצורה ברורה
-            st.error(f"גוגל לא עונה: {result.get('error', {}).get('message', 'תקלה לא ידועה')}")
+            # כאן אנחנו נראה בדיוק מה הבעיה
+            error_details = result.get('error', {})
+            error_msg = error_details.get('message', 'שגיאה לא ידועה')
+            st.error(f"גוגל אומר: {error_msg}")
+            
     except Exception as e:
         st.error(f"שגיאה בחיבור: {str(e)}")
