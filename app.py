@@ -26,16 +26,18 @@ st.title(f"שלום {st.session_state.username} 👋")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# הצגת ההיסטוריה
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# קלט מהמשתמש
 if prompt := st.chat_input("שאל אותי משהו..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # התיקון הקריטי: פנייה ישירה לכתובת ה-API (עוקף את ה-404)
+    # התיקון הקריטי: פנייה ישירה ל-API (עוקף את שגיאת ה-404)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
@@ -49,6 +51,7 @@ if prompt := st.chat_input("שאל אותי משהו..."):
                 st.markdown(bot_text)
                 st.session_state.messages.append({"role": "assistant", "content": bot_text})
         else:
-            st.error(f"שגיאה מגוגל: {result.get('error', {}).get('message', 'תקלה לא ידועה')}")
+            error_info = result.get('error', {}).get('message', 'שגיאה לא ידועה')
+            st.error(f"גוגל אומר: {error_info}")
     except Exception as e:
         st.error(f"תקלה בחיבור: {str(e)}")
