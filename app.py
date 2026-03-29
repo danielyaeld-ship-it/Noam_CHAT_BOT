@@ -9,14 +9,14 @@ st.set_page_config(page_title="AI Super Bot", layout="wide")
 # --- פונקציות זיכרון (Caching) להאצה ---
 @st.cache_resource
 def init_gemini():
-    # המפתח שלך - מוטמע ישירות כדי למנוע תקלות חיבור
+    # שימוש במפתח שנתת לי כגיבוי ישיר
     api_key = st.secrets.get("GOOGLE_API_KEY") or "AIzaSyAodfN_aB3GQ53mkI9hXhp9Y9OUhWBCews"
     
     if api_key:
         try:
             genai.configure(api_key=api_key)
-            # שימוש בשם המודל המדויק ללא תוספות
-            return genai.GenerativeModel("gemini-1.5-flash")
+            # פתרון שגיאת 404: הגדרת המודל ללא "models/" ובצורה מפורשת
+            return genai.GenerativeModel(model_name="gemini-1.5-flash")
         except Exception as e:
             st.error(f"שגיאה באתחול המודל: {e}")
     return None
@@ -27,7 +27,7 @@ def parse_pdf(file_bytes):
         reader = PdfReader(file_bytes)
         text = "".join([page.extract_text() or "" for page in reader.pages])
         words = text.split()
-        # מחלק את הטקסט למקטעים של 700 מילים
+        # חלוקה למקטעים של 700 מילים
         return [" ".join(words[i:i+700]) for i in range(0, len(words), 700)]
     except Exception:
         return []
@@ -39,7 +39,7 @@ if "messages" not in st.session_state:
 if "kb" not in st.session_state:
     st.session_state.kb = []
 
-# אתחול המודל
+# הפעלת המודל
 model = init_gemini()
 
 # --- ממשק משתמש ---
@@ -56,7 +56,7 @@ with st.sidebar:
         st.session_state.kb = new_kb
         st.success("הקבצים נטענו בהצלחה!")
 
-# הצגת היסטוריית השיחה
+# הצגת היסטוריית השיחה בצורה מודרנית
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -65,17 +65,17 @@ for msg in st.session_state.messages:
 user_input = st.chat_input("שאל אותי משהו...")
 
 if user_input:
-    # הוספת הודעת המשתמש להיסטוריה והצגתה
+    # הוספת הודעת המשתמש
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.write(user_input)
     
-    # יצירת תשובה מהמודל
+    # יצירת תשובה מהבינה המלאכותית
     if model:
         with st.chat_message("assistant"):
             with st.spinner("חושב על תשובה..."):
                 try:
-                    # שימוש במידע מה-PDF כהקשר (Context) אם קיים
+                    # שימוש בטקסט מה-PDF אם הועלה
                     context = "\n".join(st.session_state.kb[-3:])
                     full_prompt = f"Context: {context}\n\nUser: {user_input}" if context else user_input
                     
@@ -85,6 +85,7 @@ if user_input:
                     st.write(answer)
                     st.session_state.messages.append({"role": "assistant", "content": answer})
                 except Exception as e:
-                    st.error(f"שגיאה ביצירת התשובה: {e}")
+                    # הגנה מפני שגיאות בזמן ריצה
+                    st.error(f"שגיאה: {e}")
     else:
-        st.error("המודל לא הוגדר. וודא שחנית מפתח API תקין.")
+        st.error("לא הצלחתי להתחבר למודל. וודא ש-API Key תקין.")
