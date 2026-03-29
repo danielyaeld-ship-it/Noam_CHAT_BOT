@@ -19,13 +19,18 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# --- חיבור API בטוח (Secrets) ---
+# --- חיבור API חכם (עוקף 404) ---
 @st.cache_resource
 def init_gemini():
     api_key = st.secrets.get("GOOGLE_API_KEY")
     if api_key:
         try:
             genai.configure(api_key=api_key)
+            # חיפוש מודל פעיל כדי לעקוף שגיאות גרסה
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    if 'gemini-1.5-flash' in m.name:
+                        return genai.GenerativeModel(m.name)
             return genai.GenerativeModel("gemini-1.5-flash")
         except Exception as e:
             st.error(f"שגיאה בחיבור: {e}")
@@ -37,7 +42,7 @@ model = init_gemini()
 if "username" not in st.session_state: st.session_state.username = ""
 
 if not st.session_state.username:
-    st.title("🤖 הבוט של נעם - ברוכים הבאים!")
+    st.title("🤖 הבוט של נעם")
     name_input = st.text_input("איך קוראים לך?", placeholder="הכנס שם...")
     if st.button("בוא נתחיל"):
         if name_input.strip():
@@ -49,7 +54,7 @@ username = st.session_state.username
 
 # --- תפריט צד ---
 with st.sidebar:
-    st.write(f"משתמש מחובר: **{username}**")
+    st.write(f"משתמש: **{username}**")
     if st.button("💡 החלף מצב יום/לילה"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
@@ -64,22 +69,19 @@ if "messages" not in st.session_state:
 
 st.title(f"שלום {username} 👋")
 
-# הצגת היסטוריה
 for msg in st.session_state.messages:
     div_class = "user-msg" if msg["role"] == "user" else "bot-msg"
     align = "left" if msg["role"] == "user" else "right"
     st.markdown(f"<div style='text-align: {align}'><div class='{div_class}'>{msg['content']}</div></div>", unsafe_allow_html=True)
 
-# --- קלט משתמש ---
 user_input = st.chat_input("שאל אותי משהו...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     if model:
         try:
-            context = "\n".join([m["content"] for m in st.session_state.messages[-3:]])
-            response = model.generate_content(f"User Name: {username}\nContext: {context}\nQuestion: {user_input}")
+            response = model.generate_content(user_input)
             st.session_state.messages.append({"role": "bot", "content": response.text})
             st.rerun()
         except Exception as e:
-            st.error(f"שגיאה: {e}")
+            st.error(f"שגיאה בייצור תשובה: {e}")
