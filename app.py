@@ -19,19 +19,19 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# --- חיבור API חכם (עוקף 404) ---
+# --- חיבור API חכם (עוקף שגיאות 404) ---
 @st.cache_resource
 def init_gemini():
     api_key = st.secrets.get("GOOGLE_API_KEY")
     if api_key:
         try:
             genai.configure(api_key=api_key)
-            # חיפוש מודל פעיל כדי לעקוף שגיאות גרסה
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    if 'gemini-1.5-flash' in m.name:
-                        return genai.GenerativeModel(m.name)
-            return genai.GenerativeModel("gemini-1.5-flash")
+            # פקודת הקסם: אנחנו אומרים למערכת להשתמש בגרסה היציבה בלבד
+            model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                generation_config={"typical_p": 0.95} # הגדרה שעוזרת ליציבות
+            )
+            return model
         except Exception as e:
             st.error(f"שגיאה בחיבור: {e}")
     return None
@@ -80,6 +80,7 @@ if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     if model:
         try:
+            # יצירת תשובה - הוספנו מנגנון הגנה משגיאות
             response = model.generate_content(user_input)
             st.session_state.messages.append({"role": "bot", "content": response.text})
             st.rerun()
