@@ -28,11 +28,12 @@ def parse_pdf(file_bytes):
 
 # --- אתחול משתנים ---
 model = genai.GenerativeModel('gemini-1.5-flash')
+# --- אתחול משתנים ---
 model = init_gemini()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "kb" not in st.session_state:
+if model is None:
+    st.error("לא נמצא מפתח API ב-Secrets!")
+    st.stop() # זה ימנע מהקוד להמשיך לשורה 66 ולהתרסק
     st.session_state.kb = []
 
 # --- ממשק משתמש ---
