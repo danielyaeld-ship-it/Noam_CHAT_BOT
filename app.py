@@ -34,7 +34,7 @@ if "kb" not in st.session_state:
     st.session_state.kb = []
 
 # --- ממשק משתמש ---
-st.title("🤖 הבוט של יאיר")
+st.title("🤖 הבוט של נעם")
 
 with st.sidebar:
     st.header("ניהול קבצים")
