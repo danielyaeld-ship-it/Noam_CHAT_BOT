@@ -10,12 +10,13 @@ st.set_page_config(page_title="AI Super Bot", layout="wide", initial_sidebar_sta
 # --- פונקציות זיכרון (Caching) להאצה ---
 @st.cache_resource
 def init_gemini():
-    api_key = os.getenv("GOOGLE_API_KEY")
+    # מושך את המפתח מה-Secrets של Streamlit
+    api_key = st.secrets.get("GOOGLE_API_KEY") 
     if api_key:
         genai.configure(api_key=api_key)
-        return genai.GenerativeModel("models/gemini-1.5-flash")
+        # תיקון: שם המודל חייב להיות בדיוק ככה, בלי "models/"
+        return genai.GenerativeModel("gemini-1.5-flash")
     return None
-@st.cache_data
 def parse_pdf(file_bytes):
     try:
         reader = PdfReader(file_bytes)
