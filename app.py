@@ -1,14 +1,11 @@
 import streamlit as st
 import requests
-import json
 
-# הגדרות דף
 st.set_page_config(page_title="הבוט של נעם", layout="centered")
 
-# שליפת המפתח
+# שליפת המפתח מה-Secrets
 api_key = st.secrets.get("GOOGLE_API_KEY")
 
-# ניהול שם המשתמש
 if "username" not in st.session_state:
     st.session_state.username = ""
 
@@ -35,16 +32,13 @@ if prompt := st.chat_input("שאל אותי משהו..."):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # הכתובת המדויקת והחדשה ביותר של גוגל
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # כתובת ה-API הרשמית
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
-    headers = {'Content-Type': 'application/json'}
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
     try:
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response = requests.post(url, json=payload)
         result = response.json()
         
         if "candidates" in result:
@@ -53,10 +47,10 @@ if prompt := st.chat_input("שאל אותי משהו..."):
                 st.markdown(bot_text)
                 st.session_state.messages.append({"role": "assistant", "content": bot_text})
         else:
-            # כאן אנחנו נראה בדיוק מה הבעיה
-            error_details = result.get('error', {})
-            error_msg = error_details.get('message', 'שגיאה לא ידועה')
-            st.error(f"גוגל אומר: {error_msg}")
-            
+            # אם יש שגיאה, נציג אותה בצורה ברורה
+            error_msg = result.get('error', {}).get('message', 'מפתח ה-API לא תקין או חסום')
+            st.error(f"שגיאה מגוגל: {error_msg}")
+            if "API key not valid" in error_msg:
+                st.info("יאיר, נראה שצריך להחליף את המפתח ב-Secrets!")
     except Exception as e:
-        st.error(f"שגיאה בחיבור: {str(e)}")
+        st.error(f"תקלה בחיבור: {str(e)}")
