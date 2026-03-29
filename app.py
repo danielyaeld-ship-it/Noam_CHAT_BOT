@@ -13,10 +13,10 @@ def init_gemini():
     api_key = st.secrets.get("GOOGLE_API_KEY") 
     if api_key:
         genai.configure(api_key=api_key)
-        # שים לב לשם המדויק כאן:
         return genai.GenerativeModel("gemini-1.5-flash")
     return None
-    return None
+
+@st.cache_data
 def parse_pdf(file_bytes):
     try:
         reader = PdfReader(file_bytes)
