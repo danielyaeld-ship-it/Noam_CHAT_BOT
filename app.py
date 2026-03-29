@@ -7,7 +7,7 @@ genai.configure(api_key=api_key)
 
 st.title("הבוט של יאיר התותח 🤖")
 
-# יצירת המודל בצורה רשמית
+# יצירת המודל
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 if "messages" not in st.session_state:
@@ -28,4 +28,5 @@ if prompt := st.chat_input("דבר אלי..."):
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
     except Exception as e:
-        st.error(f"תקלה: {e}")
+        # אם יש שגיאה, נציג אותה בצורה ברורה
+        st.error(f"גוגל אומר שיש בעיה במפתח: {e}")
