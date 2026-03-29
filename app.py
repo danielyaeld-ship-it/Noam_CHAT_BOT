@@ -15,7 +15,6 @@ def init_gemini():
         genai.configure(api_key=api_key)
         return genai.GenerativeModel("models/gemini-1.5-flash")
     return None
-
 @st.cache_data
 def parse_pdf(file_bytes):
     try:
