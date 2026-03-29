@@ -5,7 +5,7 @@ import google.generativeai as genai
 api_key = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=api_key)
 
-st.title("הבוט של נעם התותח 🤖")
+st.title("הבוט של יאיר התותח 🤖")
 
 # יצירת המודל בצורה רשמית
 model = genai.GenerativeModel('gemini-1.5-flash')
