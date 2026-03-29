@@ -19,15 +19,16 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# --- חיבור API ---
+# --- חיבור API חסין שגיאות ---
 @st.cache_resource
 def init_gemini():
     api_key = st.secrets.get("GOOGLE_API_KEY")
     if api_key:
         try:
             genai.configure(api_key=api_key)
-            # הגדרה בסיסית ביותר שעובדת בכל הגרסאות
-            return genai.GenerativeModel("gemini-1.5-flash")
+            # שימוש בשם המודל המלא כדי לעקוף את שגיאת ה-v1beta
+            model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+            return model
         except Exception as e:
             st.error(f"שגיאה בחיבור: {e}")
     return None
@@ -35,11 +36,12 @@ def init_gemini():
 model = init_gemini()
 
 # --- ניהול משתמש ---
-if "username" not in st.session_state: st.session_state.username = ""
+if "username" not in st.session_state: 
+    st.session_state.username = ""
 
 if not st.session_state.username:
     st.title("🤖 הבוט של נעם")
-    name_input = st.text_input("איך קוראים לך?", key="name_input")
+    name_input = st.text_input("איך קוראים לך?")
     if st.button("כניסה"):
         if name_input:
             st.session_state.username = name_input
@@ -52,7 +54,7 @@ st.title(f"שלום {st.session_state.username} 👋")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# כפתורי שליטה בתפריט צד
+# תפריט צד
 with st.sidebar:
     if st.button("💡 מצב יום/לילה"):
         st.session_state.dark_mode = not st.session_state.dark_mode
@@ -61,7 +63,7 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# הצגת ההודעות
+# הצגת הודעות
 for msg in st.session_state.messages:
     align = "left" if msg["role"] == "user" else "right"
     cls = "user-msg" if msg["role"] == "user" else "bot-msg"
@@ -73,9 +75,9 @@ if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     if model:
         try:
-            # שליחה נקייה ללא הגדרות מסובכות
+            # יצירת תשובה
             response = model.generate_content(user_input)
             st.session_state.messages.append({"role": "bot", "content": response.text})
             st.rerun()
         except Exception as e:
-            st.error(f"שגיאה: {e}")
+            st.error(f"שגיאה בייצור תשובה: {e}")
