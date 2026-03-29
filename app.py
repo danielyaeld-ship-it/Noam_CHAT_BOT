@@ -13,9 +13,12 @@ def init_gemini():
     
     if api_key:
         try:
+            # הכרחת שימוש ב-API יציב
             genai.configure(api_key=api_key)
-            # שימוש ב-gemini-pro כדי לעקוף שגיאות גרסה (404)
-            return genai.GenerativeModel("gemini-pro")
+            
+            # ניסיון חיבור למודל 1.5 פלאש בצורה בטוחה
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            return model
         except Exception as e:
             st.error(f"שגיאה באתחול: {e}")
     return None
@@ -76,12 +79,14 @@ if user_input:
                     context = "\n".join(st.session_state.kb[-3:])
                     full_prompt = f"Context: {context}\n\nUser: {user_input}" if context else user_input
                     
+                    # פקודת יצירת התוכן
                     response = model.generate_content(full_prompt)
                     answer = response.text
                     
                     st.write(answer)
                     st.session_state.messages.append({"role": "assistant", "content": answer})
                 except Exception as e:
-                    st.error(f"שגיאה: {e}")
+                    # אם עדיין יש שגיאה, ננסה להציג אותה בצורה ברורה יותר
+                    st.error(f"שגיאה בייצור התשובה: {e}")
     else:
-        st.error("המודל לא מחובר. בדוק את ה-API Key.")
+        st.error("המודל לא מחובר.")
