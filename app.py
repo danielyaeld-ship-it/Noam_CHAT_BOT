@@ -8,15 +8,19 @@ st.set_page_config(page_title="AI Super Bot", layout="wide")
 
 # --- פונקציות זיכרון (Caching) להאצה ---
 @st.cache_resource
+@st.cache_resource
 def init_gemini():
-    # המפתח שנתת לי, מוטמע ישירות כדי שלא יהיו תקלות חיבור
+    # המפתח שלך מעודכן כאן
     api_key = st.secrets.get("GOOGLE_API_KEY") or "AIzaSyAodfN_aB3GQ53mkI9hXhp9Y9OUhWBCews"
     
     if api_key:
         try:
             genai.configure(api_key=api_key)
-            # השם המדויק
+            # שים לב: בלי models/ ובלי תוספות!
             return genai.GenerativeModel("gemini-1.5-flash")
+        except Exception as e:
+            st.error(f"שגיאה באתחול: {e}")
+    return None
         except Exception as e:
             st.error(f"שגיאה בהגדרת המודל: {e}")
     return None
