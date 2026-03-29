@@ -1,7 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 from PyPDF2 import PdfReader
-import os
 
 # --- הגדרות דף ---
 st.set_page_config(page_title="AI Super Bot", layout="wide")
@@ -9,14 +8,14 @@ st.set_page_config(page_title="AI Super Bot", layout="wide")
 # --- פונקציות ליבה ---
 @st.cache_resource
 def init_gemini():
-    # המפתח שלך - מוטמע ישירות למניעת תקלות
+    # המפתח שלך
     api_key = st.secrets.get("GOOGLE_API_KEY") or "AIzaSyAodfN_aB3GQ53mkI9hXhp9Y9OUhWBCews"
     
     if api_key:
         try:
             genai.configure(api_key=api_key)
-            # פתרון ה-404: שימוש ב-model_name מפורש ללא תחילית models/
-            return genai.GenerativeModel(model_name="gemini-1.5-flash")
+            # שימוש ב-gemini-pro כדי לעקוף שגיאות גרסה (404)
+            return genai.GenerativeModel("gemini-pro")
         except Exception as e:
             st.error(f"שגיאה באתחול: {e}")
     return None
@@ -52,8 +51,12 @@ with st.sidebar:
             new_kb.extend(parse_pdf(f))
         st.session_state.kb = new_kb
         st.success("הקבצים נטענו!")
+    
+    if st.button("נקה היסטוריית שיחה"):
+        st.session_state.messages = []
+        st.rerun()
 
-# הצגת היסטוריה בפורמט צ'אט
+# הצגת היסטוריה
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -62,7 +65,6 @@ for msg in st.session_state.messages:
 user_input = st.chat_input("שאל אותי משהו...")
 
 if user_input:
-    # הצגת הודעת המשתמש
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.write(user_input)
@@ -71,18 +73,15 @@ if user_input:
         with st.chat_message("assistant"):
             with st.spinner("חושב..."):
                 try:
-                    # הוספת הקשר מה-PDF
                     context = "\n".join(st.session_state.kb[-3:])
                     full_prompt = f"Context: {context}\n\nUser: {user_input}" if context else user_input
                     
-                    # יצירת התשובה
                     response = model.generate_content(full_prompt)
                     answer = response.text
                     
                     st.write(answer)
                     st.session_state.messages.append({"role": "assistant", "content": answer})
                 except Exception as e:
-                    st.error(f"שגיאה ביצירת תשובה: {e}")
-                    st.info("נסה לנקות את ה-Cache בתפריט צד ימין למעלה.")
+                    st.error(f"שגיאה: {e}")
     else:
-        st.error("המודל לא מחובר. בדוק את ה-API Key ב-Secrets.")
+        st.error("המודל לא מחובר. בדוק את ה-API Key.")
