@@ -7,7 +7,7 @@ st.set_page_config(page_title="הבוט של נעם", layout="centered")
 # שליפת המפתח מה-Secrets
 api_key = st.secrets.get("GOOGLE_API_KEY")
 
-# --- ניהול שם משתמש (זה מה שביקשת!) ---
+# --- ניהול שם משתמש ---
 if "username" not in st.session_state:
     st.session_state.username = ""
 
@@ -18,30 +18,26 @@ if not st.session_state.username:
         if name.strip():
             st.session_state.username = name.strip()
             st.rerun()
-    st.stop() # עוצר כאן עד שמכניסים שם
+    st.stop()
 
-# --- ממשק הצ'אט (ממשיך רק אחרי שיש שם) ---
+# --- ממשק הצ'אט ---
 st.title(f"שלום {st.session_state.username} 👋")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# הצגת ההיסטוריה
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# קלט מהמשתמש
 if prompt := st.chat_input("שאל אותי משהו..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # פנייה ישירה ל-API של גוגל (עוקף את שגיאת ה-404)
+    # התיקון הקריטי: פנייה ישירה לכתובת ה-API (עוקף את ה-404)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
     try:
         response = requests.post(url, json=payload)
@@ -53,7 +49,6 @@ if prompt := st.chat_input("שאל אותי משהו..."):
                 st.markdown(bot_text)
                 st.session_state.messages.append({"role": "assistant", "content": bot_text})
         else:
-            error_msg = result.get('error', {}).get('message', 'שגיאה לא ידועה')
-            st.error(f"השרת של גוגל החזיר שגיאה: {error_msg}")
+            st.error(f"שגיאה מגוגל: {result.get('error', {}).get('message', 'תקלה לא ידועה')}")
     except Exception as e:
-        st.error(f"תקלה בתקשורת: {str(e)}")
+        st.error(f"תקלה בחיבור: {str(e)}")
