@@ -28,6 +28,8 @@ def parse_pdf(file_bytes):
 
 # --- אתחול משתנים ---
 model = genai.GenerativeModel('gemini-1.5-flash')
+model = init_gemini()
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "kb" not in st.session_state:
